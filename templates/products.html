@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block content %}<div class="card"><h3>Stock List <a class="btn btn-yellow" href="/add_product">+ Add</a></h3>{% for p in products %}<div style="border-bottom:1px solid #ddd;padding:10px 0"><b>{{p[1]}}</b> - {{p[2]}}<br>Price: {{p[4]}} | Qty: {{p[3]}} <a class="btn" href="/edit_product/{{p[0]}}">Edit</a></div>{% endfor %}</div>{% endblock %}

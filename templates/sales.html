@@ -1,0 +1,1 @@
+{% extends "base.html" %}{% block content %}<div class="card"><h3>Sales History</h3>{% for s in sales %}<div style="border-bottom:1px solid #ddd;padding:8px 0">{{s[6]}} - {{s[1]}} x{{s[2]}} = {{s[3]}}<br><small>{{s[5]}} by {{s[4]}}</small></div>{% endfor %}</div>{% endblock %}
