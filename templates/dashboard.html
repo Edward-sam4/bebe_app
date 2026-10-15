@@ -1,1 +1,105 @@
-{% extends "base.html" %}{% block content %}<div class="card"><h2>Dashboard - {{role}}</h2><h3>Today Sales: UGX {{total_sales}}</h3><h3>Low Stock Items: {{low_stock|length}}</h3></div><div class="card"><a class="btn btn-yellow" href="/sell">+ NEW SALE</a> <a class="btn" href="/products">Manage Stock</a> <a class="btn" href="/add_product">Add Product</a></div>{% for p in low_stock %}<div class="card" style="border-left:4px solid red">{{p[1]}} - Only {{p[3]}} left!</div>{% endfor %}{% endblock %}
+<!doctype html>
+<html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Business Management System</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#dbe9ff}
+header{background:#0a3d91;color:white;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+header h1{margin:0;font-size:20px}
+.search input{padding:10px 16px;border-radius:25px;border:none;width:280px}
+.container{padding:18px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.card{background:white;padding:14px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+table{width:100%;border-collapse:collapse;background:white;border-radius:10px;overflow:hidden;margin-bottom:10px}
+th,td{padding:9px 8px;text-align:left;border-bottom:1px solid #eee;font-size:13px}
+th{background:#0a3d91;color:white}
+.btn{padding:6px 12px;border:none;border-radius:6px;color:white;text-decoration:none;font-size:12px;cursor:pointer;display:inline-block;margin:2px}
+.btn-blue{background:#0a3d91}.btn-green{background:#16a34a}.btn-orange{background:#ea580c}.btn-red{background:#dc2626}.btn-gray{background:#555}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:850px){.grid2{grid-template-columns:1fr}.search input{width:160px}}
+input,select{padding:8px;border:1px solid #ccc;border-radius:6px;margin:3px 2px}
+</style>
+<script>
+function calc(){let q=document.getElementById('sqty').value;let p=document.getElementById('sprice').value;document.getElementById('stotal').value=(q*p)||''}
+</script>
+</head>
+<body>
+<header>
+<h1>Business Management System</h1>
+<form class="search" method="get" action="/dashboard"><input name="q" value="{{q}}" placeholder="🔍 Search bar - search stock..." ></form>
+<div><small>User: {{session.user}}</small> <a href="/logout" style="color:white;margin-left:12px">Logout</a></div>
+</header>
+
+<div class="container">
+<div class="cards">
+<div class="card"><b>Total Stock Value</b><h2 style="margin:6px 0">UGX {{ "{:,.0f}".format(total_stock_value) }}</h2></div>
+<div class="card"><b>Total Sales (Auto)</b><h2 style="margin:6px 0">UGX {{ "{:,.0f}".format(total_sales) }}</h2><small>Automatic calculation</small></div>
+<div class="card"><b>Total Debts</b><h2 style="margin:6px 0">UGX {{ "{:,.0f}".format(total_debt) }}</h2></div>
+<div class="card"><b>Generate Documents</b><div style="margin-top:8px">
+<a class="btn btn-blue" href="/document/invoice">Invoice</a>
+<a class="btn btn-green" href="/document/proforma">Proforma</a>
+<a class="btn btn-orange" href="/document/delivery">Delivery Letter</a>
+<a class="btn btn-red" href="/document/receipt">Recipe</a>
+<a class="btn btn-gray" href="/document/report">Report</a>
+</div></div>
+</div>
+
+<div class="grid2">
+<div>
+<h3>📦 Stock List - Table Format</h3>
+<table>
+<tr><th>ID</th><th>Item Name</th><th>Qty</th><th>Unit</th><th>Buy</th><th>Sell</th><th>Line Total</th></tr>
+{% for s in stock %}
+<tr><td>{{s.id}}</td><td>{{s.name}}</td><td>{{s.qty}}</td><td>{{s.unit}}</td><td>{{ "{:,.0f}".format(s.buy) }}</td><td>{{ "{:,.0f}".format(s.sell) }}</td><td><b>{{ "{:,.0f}".format(s.qty*s.sell) }}</b></td></tr>
+{% endfor %}
+<tr style="background:#e0ecff"><td colspan="6"><b>FINAL TOTAL FOR EVERY ITEM DOWN</b></td><td><b>UGX {{ "{:,.0f}".format(total_stock_value) }}</b></td></tr>
+</table>
+<h4>Add Stock</h4>
+<form method="post" action="/add_stock">
+<input name="name" placeholder="Item name" required>
+<input name="qty" type="number" placeholder="Qty" required>
+<input name="unit" placeholder="Unit (Bags)" >
+<input name="buy" type="number" placeholder="Buy price">
+<input name="sell" type="number" placeholder="Sell price" required>
+<button class="btn btn-blue">Add Stock</button>
+</form>
+</div>
+
+<div>
+<h3>💰 Sales - Total Automatic</h3>
+<table>
+<tr><th>Item</th><th>Qty</th><th>Unit Price</th><th>Total (Qty×Price)</th><th>Date</th></tr>
+{% for s in sales %}
+<tr><td>{{s.item}}</td><td>{{s.qty}}</td><td>{{ "{:,.0f}".format(s.price) }}</td><td><b>{{ "{:,.0f}".format(s.total) }}</b></td><td>{{s.date}}</td></tr>
+{% endfor %}
+{% if sales %}
+<tr style="background:#e0ecff"><td colspan="3"><b>FINAL TOTAL</b></td><td colspan="2"><b>UGX {{ "{:,.0f}".format(total_sales) }}</b></td></tr>
+{% endif %}
+</table>
+<h4>New Sale - Sales total automatic</h4>
+<form method="post" action="/add_sale">
+<select name="item" required>{% for s in stock %}<option value="{{s.name}}">{{s.name}} ({{s.qty}} left)</option>{% endfor %}</select>
+<input id="sqty" name="qty" type="number" value="1" oninput="calc()" required>
+<input id="sprice" name="price" type="number" placeholder="Price" oninput="calc()" required>
+<input id="stotal" placeholder="Auto Total" readonly style="background:#eee;font-weight:bold">
+<button class="btn btn-green">Record Sale</button>
+</form>
+
+<h3 style="margin-top:22px">📒 Debts List</h3>
+<table>
+<tr><th>Customer</th><th>Phone</th><th>Amount</th><th>Date</th><th>Status</th></tr>
+{% for d in debts %}
+<tr><td>{{d.customer}}</td><td>{{d.phone}}</td><td>UGX {{ "{:,.0f}".format(d.amount) }}</td><td>{{d.date}}</td><td>{{d.status}}</td></tr>
+{% endfor %}
+</table>
+<form method="post" action="/add_debt">
+<input name="customer" placeholder="Customer name" required>
+<input name="phone" placeholder="Phone">
+<input name="amount" type="number" placeholder="Amount owed" required>
+<button class="btn btn-red">Add Debt</button>
+</form>
+</div>
+</div>
+</div>
+</body></html>
